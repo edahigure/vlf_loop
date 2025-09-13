@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Definir los rangos de los parámetros
+lats=(17.0 17.1 17.2 17.3)    # Valores de latitud
+lons=(-101.4 -101.5 -101.6)   # Valores de longitud  
+zs=(10 20 30 40)              # Valores de profundidad
+Mw=6.7                        # Magnitud (constante)
+
+archivo="results_vlf.out"
+
+rm ${archivo}
+# Loop sobre todas las combinaciones
+for lat in "${lats[@]}"; do
+    for lon in "${lons[@]}"; do
+        for z in "${zs[@]}"; do
+            echo "Ejecutando: ./main_vlf $lat $lon $z $Mw"
+            bash ./main_vlf "$lat" "$lon" "$z" "$Mw"
+            sed -i "\$ s/^/$lat $lon $z /" results_vlf.out
+
+        done
+    done
+done
+
+sort -k15,15 -nr results_vlf.out | head -1 > max_var.out

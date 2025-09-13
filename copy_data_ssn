@@ -1,0 +1,133 @@
+#!/bin/bash
+
+#copia y corta archivo sac 
+#Programa para archivos sac de 24 hr en SEAGATEB de la RED
+
+IN_DIR=$(pwd)
+OUT_DIR=$(pwd)'/data'
+
+mkdir $OUT_DIR
+
+
+if [ true ]
+then
+
+rm ${OUT_DIR}/*.sac_deconv
+rm ${OUT_DIR}/*.sac_rot
+rm ${OUT_DIR}/*.sac
+rm ${OUT_DIR}/stat.list
+
+fi
+
+
+
+declare -a station
+
+station[0]=ANIG
+station[1]=ZAIG
+station[2]=CMIG
+station[3]=CJIG
+station[4]=HUIG
+station[5]=LVIG
+
+year=$1
+month=$2
+day=$3
+
+hour=$4
+min=$5
+sec=$6
+
+DeltaT=$7
+
+
+
+read  T0 <<< `calc $hour*60*60+$min*60+$sec`
+
+read  T1 <<< `calc $T0+$DeltaT`
+
+echo $T0 $T1
+
+
+
+
+declare -a splited_name
+
+declare -a files
+
+cont=0
+
+#find the sac file corresponding to the given hour and cut it 
+
+
+for  kk in 0 1 2 4 5
+do
+
+
+  IFS=' '  read  jday <<< `julian_day $year $month $day`
+
+  echo Julian day: $jday
+
+
+
+  ls $year$month$day*${station[$kk]}* >tmp
+
+  for sac_file in `cat tmp`
+  do
+    
+    splited_name=($(echo $sac_file | tr "." "\n"))
+
+    echo splited name ${splited_name[@]}
+    stname=${splited_name[2]}
+    cmpname=${splited_name[3]}
+
+
+
+name_cp=$year.$jday.$hour.$min.$sec.$stname.$cmpname.sac
+     echo $name_cp
+
+echo ${stname}_${cmpname} >> $OUT_DIR/stat.list
+
+
+sac << eof
+ 
+      setbb name "$sac_file"
+      setbb name_cp "${name_cp}"
+
+      setbb time0  "$T0"
+      setbb time1  "$T1"
+
+      getbb name
+      getbb name_cp
+      getbb time0
+      getbb time1
+
+      cut  %time0 %time1
+      
+      read %name
+      synchronize
+      taper
+
+      write %name_cp
+
+      quit
+      quit
+
+eof
+  mv ${name_cp} $OUT_DIR/${name_cp}
+
+
+
+
+  done
+
+
+
+done 
+
+
+
+
+
+
+
